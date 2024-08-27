@@ -9,7 +9,8 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "devDependencies": {
+  "dependencies": {
+    "dotenv": "^16.4.5",
     "@polkadot/api": "^12.4.1",
     "@polkadot/util-crypto": "^13.0.2",
     "@types/jest": "^29.5.12",
