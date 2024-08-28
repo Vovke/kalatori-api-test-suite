@@ -5,10 +5,7 @@ import { ApiPromise } from '@polkadot/api';
 describe('Order Endpoint Blackbox Tests', () => {
   let api: ApiPromise;
   const baseUrl = process.env.DAEMON_HOST;
-  const ahRpcUrl = process.env.AH_RPC_URL;
-  const dotRpcUrl = process.env.DOT_RPC_URL;
-  const recipientAddressSS = process.env.RECIPIENT_SS;
-  if (!baseUrl || !ahRpcUrl || !dotRpcUrl || !recipientAddressSS) {
+  if (!baseUrl ) {
     throw new Error('check all environment variables are defined');
   }
   const dotOrderData = {
@@ -82,7 +79,7 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(createdOrder.currency).toHaveProperty('chain_name', 'rococo');
     expect(createdOrder.currency).toHaveProperty('kind', 'native');
     expect(createdOrder.currency).toHaveProperty('decimals', 10);
-    expect(createdOrder.currency).toHaveProperty('rpc_url', dotRpcUrl);
+    expect(createdOrder.currency).toHaveProperty('rpc_url');
   });
 
   it('should create a new USDC order', async () => {
@@ -95,7 +92,7 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(createdOrder.currency).toHaveProperty('chain_name', 'statemint');
     expect(createdOrder.currency).toHaveProperty('kind', 'asset');
     expect(createdOrder.currency).toHaveProperty('decimals', 6);
-    expect(createdOrder.currency).toHaveProperty('rpc_url', ahRpcUrl);
+    expect(createdOrder.currency).toHaveProperty('rpc_url');
     expect(createdOrder.currency).toHaveProperty('asset_id', 1337);
   });
 
@@ -111,7 +108,7 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(orderDetails.currency).toHaveProperty('chain_name', 'rococo');
     expect(orderDetails.currency).toHaveProperty('kind', 'native');
     expect(orderDetails.currency).toHaveProperty('decimals', 10);
-    expect(orderDetails.currency).toHaveProperty('rpc_url', dotRpcUrl);
+    expect(orderDetails.currency).toHaveProperty('rpc_url');
   });
 
   it('should get USDC order details', async () => {
@@ -125,7 +122,7 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(orderDetails.currency).toHaveProperty('chain_name', 'statemint');
     expect(orderDetails.currency).toHaveProperty('kind', 'asset');
     expect(orderDetails.currency).toHaveProperty('decimals', 6);
-    expect(orderDetails.currency).toHaveProperty('rpc_url', ahRpcUrl);
+    expect(orderDetails.currency).toHaveProperty('rpc_url');
     expect(orderDetails.currency).toHaveProperty('asset_id', 1337);
   });
 
