@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { cryptoWaitReady, decodeAddress, encodeAddress } from '@polkadot/util-crypto';
 
 export async function updateAccountBalance(api: ApiPromise, accountAddress: string, amount: bigint): Promise<void> {
   const keyring = new Keyring({ type: 'sr25519' });
@@ -16,22 +16,31 @@ export async function connectPolkadot(): Promise<ApiPromise> {
   return api;
 }
 
-export async function transferFunds(api: ApiPromise, paymentAccount: string, amount: number, assetId?: number) {
+export async function transferFunds(rpcUrl: string, paymentAccount: string, amount: number, assetId?: number) {
+  const provider = new WsProvider(rpcUrl);
+  const api = await ApiPromise.create({ provider });
   const keyring = new Keyring({ type: 'sr25519' });
   const sender = keyring.addFromUri('//Alice');
+  let transfer;
+  let signerOptions = {};
 
   await cryptoWaitReady();
 
-  let transfer;
   if (assetId) {
-    const adjustedAmount = amount * Math.pow(10, 12); // Assuming 12 decimals for the asset
+    const adjustedAmount = BigInt(amount) * BigInt(Math.pow(10, 6));
+
     transfer = api.tx.assets.transfer(assetId, paymentAccount, adjustedAmount);
+    signerOptions = {
+      tip: 0,
+      assetId: { parents: 0, interior: { X2: [{ palletInstance: 50 }, { generalIndex: assetId }] } }
+    };
   } else {
-    const adjustedAmount = amount * Math.pow(10, 10); // Assuming 10 decimals for DOT
-    transfer = api.tx.balances.transfer(paymentAccount, adjustedAmount);
+    const adjustedAmount = BigInt(amount) * BigInt(Math.pow(10, 10));
+
+    transfer = api.tx.balances.transferKeepAlive(paymentAccount, adjustedAmount);
   }
 
-  const unsub = await transfer.signAndSend(sender, ({ status }) => {
+  const unsub = await transfer.signAndSend(sender, signerOptions, async ({ status }) => {
     if (status.isInBlock || status.isFinalized) {
       unsub();
     }
