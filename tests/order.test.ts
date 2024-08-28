@@ -12,12 +12,12 @@ describe('Order Endpoint Blackbox Tests', () => {
     throw new Error('check all environment variables are defined');
   }
   const dotOrderData = {
-    amount: 10,
+    amount: 1,
     currency: 'DOTL',
     callback: 'https://example.com/callback'
   };
   const usdcOrderData = {
-    amount: 10,
+    amount: 1,
     currency: 'USDC',
     callback: 'https://example.com/callback'
   };
@@ -169,52 +169,62 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(repaidOrderDetails.withdrawal_status).toBe('completed');
   }, 30000);
 
-  // xit('should not automatically withdraw an order until fully repaid', async () => {
-  //   const orderId = generateRandomOrderId();
-  //   await createOrder(orderId, usdcOrderData);
-  //   const orderDetails = await getOrderDetails(orderId);
-  //   const paymentAccount = orderDetails.paymentAccount;
-  //   expect(paymentAccount).toBeDefined();
-  //
-  //   const assetId = 1337;
-  //   const halfAmount = 50;
-  //
-  //   // Partial repayment
-  //   await transferFunds(api, paymentAccount, halfAmount, assetId);
-  //   let repaidOrderDetails = await getOrderDetails(orderId);
-  //   expect(repaidOrderDetails.paymentStatus).toBe('pending');
-  //   expect(repaidOrderDetails.withdrawalStatus).toBe('waiting');
-  //   expect(repaidOrderDetails.repaidAmount).toBe(halfAmount);
-  //
-  //   // Full repayment
-  //   await transferFunds(api, paymentAccount, halfAmount, assetId);
-  //   repaidOrderDetails = await getOrderDetails(orderId);
-  //   expect(repaidOrderDetails.paymentStatus).toBe('paid');
-  //   expect(repaidOrderDetails.withdrawalStatus).toBe('completed');
-  //   expect(repaidOrderDetails.repaidAmount).toBe(usdcOrderData.amount);
-  // });
-  //
-  // xit('should not update order if received payment in wrong currency', async () => {
-  //   const orderId = generateRandomOrderId();
-  //   await createOrder(orderId, usdcOrderData);
-  //   const orderDetails = await getOrderDetails(orderId);
-  //   const paymentAccount = orderDetails.paymentAccount;
-  //   expect(paymentAccount).toBeDefined();
-  //
-  //   const assetId = 1984; // Different asset ID to simulate wrong currency
-  //   await transferFunds(api, paymentAccount, usdcOrderData.amount, assetId);
-  //
-  //   const repaidOrderDetails = await getOrderDetails(orderId);
-  //   expect(repaidOrderDetails.paymentStatus).toBe('pending');
-  //   expect(repaidOrderDetails.withdrawalStatus).toBe('waiting');
-  //   expect(repaidOrderDetails.repaidAmount).toBe(0);
-  // });
-  //
-  // xit('should return 404 for non-existing order on force withdrawal', async () => {
-  //   const nonExistingOrderId = 'nonExistingOrder123';
-  //   const response = await request(baseUrl)
-  //     .post(`/v2/order/${nonExistingOrderId}/forceWithdrawal`);
-  //   expect(response.status).toBe(404);
-  //   expect(response.body).toHaveProperty('error', 'Order not found');
-  // });
+  it('should not automatically withdraw an order until fully repaid', async () => {
+    const orderId = generateRandomOrderId();
+    await createOrder(orderId, usdcOrderData);
+    const orderDetails = await getOrderDetails(orderId);
+    const paymentAccount = orderDetails.payment_account;
+    expect(paymentAccount).toBeDefined();
+
+    const halfAmount = orderDetails.amount/2;
+
+    // Partial repayment
+    await transferFunds(
+      orderDetails.currency.rpc_url,
+      paymentAccount,
+      halfAmount,
+      orderDetails.currency.asset_id
+    );
+    let repaidOrderDetails = await getOrderDetails(orderId);
+    expect(repaidOrderDetails.payment_status).toBe('pending');
+    expect(repaidOrderDetails.withdrawal_status).toBe('waiting');
+
+    // Full repayment
+    await transferFunds(
+      orderDetails.currency.rpc_url,
+      paymentAccount,
+      halfAmount,
+      orderDetails.currency.asset_id
+    );
+    repaidOrderDetails = await getOrderDetails(orderId);
+    expect(repaidOrderDetails.payment_status).toBe('paid');
+    expect(repaidOrderDetails.withdrawal_status).toBe('completed');
+  }, 30000);
+
+  it('should not update order if received payment in wrong currency', async () => {
+    const orderId = generateRandomOrderId();
+    await createOrder(orderId, usdcOrderData);
+    const orderDetails = await getOrderDetails(orderId);
+    const paymentAccount = orderDetails.payment_account;
+    expect(paymentAccount).toBeDefined();
+
+    const assetId = 1984; // Different asset ID to simulate wrong currency
+    await transferFunds(
+      orderDetails.currency.rpc_url,
+      paymentAccount,
+      usdcOrderData.amount,
+      assetId
+    );
+
+    const repaidOrderDetails = await getOrderDetails(orderId);
+    expect(repaidOrderDetails.payment_status).toBe('pending');
+    expect(repaidOrderDetails.withdrawal_status).toBe('waiting');
+  }, 30000);
+
+  it('should return 404 for non-existing order on force withdrawal', async () => {
+    const nonExistingOrderId = 'nonExistingOrder123';
+    const response = await request(baseUrl)
+      .post(`/v2/order/${nonExistingOrderId}/forceWithdrawal`);
+    expect(response.status).toBe(404);
+  });
 });

@@ -27,7 +27,7 @@ export async function transferFunds(rpcUrl: string, paymentAccount: string, amou
   await cryptoWaitReady();
 
   if (assetId) {
-    const adjustedAmount = BigInt(amount) * BigInt(Math.pow(10, 6));
+    const adjustedAmount = amount * Math.pow(10, 6);
 
     transfer = api.tx.assets.transfer(assetId, paymentAccount, adjustedAmount);
     signerOptions = {
@@ -35,7 +35,7 @@ export async function transferFunds(rpcUrl: string, paymentAccount: string, amou
       assetId: { parents: 0, interior: { X2: [{ palletInstance: 50 }, { generalIndex: assetId }] } }
     };
   } else {
-    const adjustedAmount = BigInt(amount) * BigInt(Math.pow(10, 10));
+    const adjustedAmount = amount * Math.pow(10, 10);
 
     transfer = api.tx.balances.transferKeepAlive(paymentAccount, adjustedAmount);
   }
