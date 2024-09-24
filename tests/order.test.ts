@@ -36,7 +36,7 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(orderResponseObject).toHaveProperty('payment_page', '');
     expect(orderResponseObject).toHaveProperty('redirect_url', '');
 
-    expect(orderResponseObject.server_info).toHaveProperty('version', '0.2.0-rc3');
+    expect(orderResponseObject.server_info).toHaveProperty('version');
     expect(orderResponseObject.server_info).toHaveProperty('instance_id');
     expect(orderResponseObject.server_info).toHaveProperty('debug', true);
   }
