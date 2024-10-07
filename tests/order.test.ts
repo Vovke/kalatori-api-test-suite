@@ -10,12 +10,36 @@ describe('Order Endpoint Blackbox Tests', () => {
   }
   const dotOrderData = {
     amount: 1,
-    currency: 'DOTL',
+    currency: 'DOT',
     callback: 'https://example.com/callback'
   };
+
   const usdcOrderData = {
     amount: 1,
     currency: 'USDC',
+    callback: 'https://example.com/callback'
+  };
+
+  const invalidOrderAmount = {
+    amount: -1,
+    currency: 'DOT',
+    callback: 'https://example.com/callback'
+  };
+
+  const missingOrderAmount = {
+    currency: 'DOT',
+    callback: 'https://example.com/callback'
+  };
+
+  const invalidOrderCurrency = {
+    amount: 1,
+    currency: 'INVALID',
+    callback: 'https://example.com/callback'
+  };
+
+  const missingOrderCurrency = {
+    amount: 1,
+    currency: 'INVALID',
     callback: 'https://example.com/callback'
   };
 
@@ -45,11 +69,11 @@ describe('Order Endpoint Blackbox Tests', () => {
     return `order_${Math.random().toString(36).substring(2, 15)}`;
   }
 
-  const createOrder = async (orderId: string, orderData: any) => {
+  const createOrder = async (orderId: string, orderData: any, expectedStatus: number = 201) => {
     const response = await request(baseUrl)
       .post(`/v2/order/${orderId}`)
       .send(orderData);
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(expectedStatus);
 
     return response.body;
   };
@@ -76,7 +100,7 @@ describe('Order Endpoint Blackbox Tests', () => {
 
     expect(createdOrder).toHaveProperty('currency');
     expect(createdOrder.currency).toHaveProperty('currency', dotOrderData.currency);
-    expect(createdOrder.currency).toHaveProperty('chain_name', 'rococo');
+    expect(createdOrder.currency).toHaveProperty('chain_name', 'polkadot');
     expect(createdOrder.currency).toHaveProperty('kind', 'native');
     expect(createdOrder.currency).toHaveProperty('decimals', 10);
     expect(createdOrder.currency).toHaveProperty('rpc_url');
@@ -96,6 +120,74 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(createdOrder.currency).toHaveProperty('asset_id', 1337);
   });
 
+  it('should return 400 for invalid amount', async () => {
+    const orderId = generateRandomOrderId();
+    const response = await request(baseUrl)
+      .post(`/v2/order/${orderId}`)
+      .send(invalidOrderAmount);
+
+    expect(response.status).toBe(400);
+    expect(response.body[0]).toHaveProperty('parameter', 'amount');
+    expect(response.body[0]).toHaveProperty('message', expect.stringContaining('less than the currency\'s existential deposit'));
+  });
+
+  it('should return 400 for missing amount', async () => {
+    const orderId = generateRandomOrderId();
+    const response = await request(baseUrl)
+      .post(`/v2/order/${orderId}`)
+      .send(missingOrderAmount);
+
+    expect(response.status).toBe(400);
+    expect(response.body[0]).toHaveProperty('parameter', 'amount');
+    expect(response.body[0]).toHaveProperty('message', expect.stringContaining('parameter wasn\'t found'));
+  });
+
+  it('should return 400 for invalid currency', async () => {
+    const orderId = generateRandomOrderId();
+    const response = await request(baseUrl)
+      .post(`/v2/order/${orderId}`)
+      .send(invalidOrderCurrency);
+
+    expect(response.status).toBe(400);
+    expect(response.body[0]).toHaveProperty('parameter', 'currency');
+    expect(response.body[0]).toHaveProperty('message', 'provided currency isn\'t supported');
+  });
+
+  it('should return 400 for missing currency', async () => {
+    const orderId = generateRandomOrderId();
+    const response = await request(baseUrl)
+      .post(`/v2/order/${orderId}`)
+      .send(missingOrderCurrency);
+
+    expect(response.status).toBe(400);
+    expect(response.body[0]).toHaveProperty('parameter', 'currency');
+    expect(response.body[0]).toHaveProperty('message', 'parameter wasn\'t found');
+  });
+
+  it('should update existing DOT order to be USDC', async () => {
+    const orderId = generateRandomOrderId();
+    const createdOrder = await createOrder(orderId, dotOrderData);
+    checkOrder(orderId, createdOrder, dotOrderData);
+
+    expect(createdOrder).toHaveProperty('currency');
+    expect(createdOrder.currency).toHaveProperty('currency', dotOrderData.currency);
+    expect(createdOrder.currency).toHaveProperty('chain_name', 'polkadot');
+    expect(createdOrder.currency).toHaveProperty('kind', 'native');
+    expect(createdOrder.currency).toHaveProperty('decimals', 10);
+    expect(createdOrder.currency).toHaveProperty('rpc_url');
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const updatedOrder = await createOrder(orderId, usdcOrderData, 200);
+    console.log(updatedOrder);
+    expect(updatedOrder).toHaveProperty('currency');
+    expect(updatedOrder.currency).toHaveProperty('currency', usdcOrderData.currency);
+    expect(updatedOrder.currency).toHaveProperty('chain_name', 'statemint');
+    expect(updatedOrder.currency).toHaveProperty('kind', 'asset');
+    expect(updatedOrder.currency).toHaveProperty('decimals', 6);
+    expect(updatedOrder.currency).toHaveProperty('rpc_url');
+  });
+
   it('should get DOT order details', async () => {
     const orderId = generateRandomOrderId();
     await createOrder(orderId, dotOrderData);
@@ -105,7 +197,7 @@ describe('Order Endpoint Blackbox Tests', () => {
 
     expect(orderDetails).toHaveProperty('currency');
     expect(orderDetails.currency).toHaveProperty('currency', dotOrderData.currency);
-    expect(orderDetails.currency).toHaveProperty('chain_name', 'rococo');
+    expect(orderDetails.currency).toHaveProperty('chain_name', 'polkadot');
     expect(orderDetails.currency).toHaveProperty('kind', 'native');
     expect(orderDetails.currency).toHaveProperty('decimals', 10);
     expect(orderDetails.currency).toHaveProperty('rpc_url');
