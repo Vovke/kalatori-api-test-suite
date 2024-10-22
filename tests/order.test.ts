@@ -3,8 +3,6 @@ import { connectPolkadot, transferFunds } from '../src/polkadot';
 import { ApiPromise } from '@polkadot/api';
 
 describe('Order Endpoint Blackbox Tests', () => {
-  let api: ApiPromise;
-  let rpcUrl: string;
   const baseUrl = process.env.DAEMON_HOST;
   if (!baseUrl ) {
     throw new Error('check all environment variables are defined');
@@ -85,17 +83,6 @@ describe('Order Endpoint Blackbox Tests', () => {
     expect(response.status).toBe(200);
     return response.body;
   };
-
-  beforeAll(async () => {
-    const statusResponse = await request(baseUrl).get('/v2/status');
-    rpcUrl = statusResponse.body.supported_currencies.DOT.rpc_url; // Change this as needed for different currencies
-
-    api = await connectPolkadot(rpcUrl);
-  });
-
-  afterAll(async () => {
-    await api.disconnect();
-  });
 
   it('should create a new DOT order', async () => {
     const orderId = generateRandomOrderId();
