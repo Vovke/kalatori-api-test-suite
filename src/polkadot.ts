@@ -9,8 +9,8 @@ export async function updateAccountBalance(api: ApiPromise, accountAddress: stri
   await transfer.signAndSend(alice);
 }
 
-export async function connectPolkadot(): Promise<ApiPromise> {
-  const provider = new WsProvider('wss://polkadot.api.onfinality.io/public-ws');
+export async function connectPolkadot(rpcUrl: string): Promise<ApiPromise> {
+  const provider = new WsProvider(rpcUrl);
   const api = await ApiPromise.create({ provider });
   await api.isReady;
   return api;
